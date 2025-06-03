@@ -43,4 +43,53 @@ if st.button("문제 생성하기"):
         else:
             st.markdown("- 이 기능은 현재 영작 유형만 샘플로 제공됩니다.")
 
-# PDF 기능은 향후 추가 예정
+import streamlit as st
+from weasyprint import HTML
+from io import BytesIO
+
+# PDF 생성 함수
+def generate_pdf_stream(html_content: str) -> BytesIO:
+    pdf_file = BytesIO()
+    HTML(string=html_content).write_pdf(pdf_file)
+    pdf_file.seek(0)
+    return pdf_file
+
+# 샘플 HTML 템플릿 (여기에 문제나 정답 내용을 동적으로 넣어도 됨)
+def create_quiz_html(is_answer: bool = False) -> str:
+    content = """
+    <html>
+    <body style='font-family: sans-serif; padding: 2rem;'>
+        <h2>SNT Grammar {title}</h2>
+        <ol>
+            <li>He <u>_____</u> happy yesterday.</li>
+            <li>They <u>_____</u> at the park.</li>
+        </ol>
+    """.replace("{title}", "Answer Sheet" if is_answer else "Quiz")
+
+    if is_answer:
+        content += """
+        <hr>
+        <h4>정답</h4>
+        <ul>
+            <li>was</li>
+            <li>were</li>
+        </ul>
+        """
+
+    content += "</body></html>"
+    return content
+
+# Streamlit UI
+st.title("📄 문법 문제지 / 정답지 실시간 PDF 생성기")
+
+option = st.radio("출력할 항목을 선택하세요:", ["문제지", "정답지"])
+
+if st.button("📥 PDF 생성 및 다운로드"):
+    html = create_quiz_html(is_answer=(option == "정답지"))
+    pdf = generate_pdf_stream(html)
+    st.download_button(
+        label="PDF 다운로드",
+        data=pdf,
+        file_name="문제지.pdf" if option == "문제지" else "정답지.pdf",
+        mime="application/pdf"
+    )
